@@ -1,0 +1,77 @@
+export type SupportedLanguage = 'en' | 'mr' | 'hi';
+
+export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
+  en: {
+    navFindJobs: 'Find Jobs',
+    navDiscoverWorkers: 'Discover Workers',
+    navSkillMap: 'Geo Map',
+    navLearning: 'Learning Hub',
+    navSignIn: 'Sign In',
+    navWorkspace: 'Workspace',
+    heroKicker: 'Digital Employment & Reputation Infrastructure for Skilled India',
+    heroTitle: 'Verified practical skills. Fair daily wages. Trusted local hiring.',
+    heroSubtitle:
+      'KaushalSetu connects electricians, plumbers, carpenters, solar technicians, and welders with verified households and contractors through explainable AI matching, dynamic reputation scoring, and scannable Digital Skill Passports.',
+    searchPlaceholder: 'Search trade, skill, or city (e.g., Electrician in Latur)...',
+    voiceBtn: 'Voice Search',
+    voiceListening: 'Listening...',
+    searchBtn: 'Search Opportunities',
+    hireWorkerCta: 'Post a Job Requirement',
+    joinWorkerCta: 'Create Worker Skill Passport',
+    fairModeLabel: 'Fair Opportunity Mode',
+    statsWorkers: 'Registered Skilled Workers',
+    statsJobs: 'Open Verified Jobs',
+    statsAssessed: 'AI-Assessed Trade Skills',
+    statsCompleted: 'Completed Projects',
+  },
+  mr: {
+    navFindJobs: 'नोकऱ्या शोधा',
+    navDiscoverWorkers: 'कुशल कामगार',
+    navSkillMap: 'नकाशा शोध',
+    navLearning: 'प्रशिक्षण केंद्र',
+    navSignIn: 'लॉगिन करा',
+    navWorkspace: 'डॅशबोर्ड',
+    heroKicker: 'भारतातील कुशल कारागिरांसाठी एआय रोजगार व प्रतिष्ठा प्रणाली',
+    heroTitle: 'कौशल्याची खरी ओळख. योग्य रोजंदारी. विश्वासार्ह स्थानिक काम.',
+    heroSubtitle:
+      'कौशलसेतू इलेक्ट्रिशियन, प्लंबर, सुतार, सोलर तंत्रज्ञ आणि वेल्डर यांना पारदर्शक एआय मॅचिंग, प्रतिष्ठा स्कोर आणि डिजिटल स्किल पासपोर्टद्वारे थेट ग्राहकांशी जोडते.',
+    searchPlaceholder: 'कौशल्य किंवा शहर शोधा (उदा. लातूरमध्ये इलेक्ट्रिशियन)...',
+    voiceBtn: 'आवाजाने शोधा',
+    voiceListening: 'ऐकत आहे...',
+    searchBtn: 'काम शोधा',
+    hireWorkerCta: 'नवीन काम पोस्ट करा',
+    joinWorkerCta: 'डिजिटल स्किल पासपोर्ट बनवा',
+    fairModeLabel: 'नवीन कामगारांसाठी समान संधी मोड',
+    statsWorkers: 'नोंदणीकृत कुशल कामगार',
+    statsJobs: 'उपलब्ध कामे',
+    statsAssessed: 'तपासलेली कौशल्ये',
+    statsCompleted: 'पूर्ण झालेले प्रकल्प',
+  },
+  hi: {
+    navFindJobs: 'काम खोजें',
+    navDiscoverWorkers: 'कुशल कारीगर',
+    navSkillMap: 'मैप खोज',
+    navLearning: 'प्रशिक्षण केंद्र',
+    navSignIn: 'लॉगिन करें',
+    navWorkspace: 'डैशबोर्ड',
+    heroKicker: 'कुशल भारत के लिए एआई रोजगार और प्रतिष्ठा प्रणाली',
+    heroTitle: 'व्यावहारिक कौशल की पहचान। उचित दिहाड़ी। भरोसेमंद काम।',
+    heroSubtitle:
+      'कौशलसेतु इलेक्ट्रीशियन, प्लंबर, बढ़ई, सोलर तकनीशियन और वेल्डर को पारदर्शी एआई मैचिंग, प्रतिष्ठा स्कोर और डिजिटल स्किल पासपोर्ट के माध्यम से सीधे काम दिलाता है।',
+    searchPlaceholder: 'कौशल या शहर खोजें (जैसे लातूर में इलेक्ट्रीशियन)...',
+    voiceBtn: 'बोलकर खोजें',
+    voiceListening: 'सुन रहे हैं...',
+    searchBtn: 'अवसर खोजें',
+    hireWorkerCta: 'नया काम पोस्ट करें',
+    joinWorkerCta: 'डिजिटल स्किल पासपोर्ट बनाएं',
+    fairModeLabel: 'नए कारीगरों के लिए समान अवसर मोड',
+    statsWorkers: 'पंजीकृत कुशल कारीगर',
+    statsJobs: 'उपलब्ध कार्य अवसर',
+    statsAssessed: 'सत्यापित कौशल',
+    statsCompleted: 'पूर्ण किए गए प्रोजेक्ट',
+  },
+};
+
+export function t(lang: SupportedLanguage, key: string): string {
+  return TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
+}

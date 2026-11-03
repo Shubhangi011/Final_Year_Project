@@ -1,0 +1,6 @@
+{
+  "name": "KaushalSetu",
+  "description": "AI-powered skilled worker hiring, skill verification, digital skill passport, and dynamic reputation intelligence ecosystem for India.",
+  "requestFramePermissions": ["microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
