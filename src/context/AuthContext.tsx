@@ -42,7 +42,15 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState<SupportedLanguage>('en');
+  const [language, setLanguageState] = useState<SupportedLanguage>(() => {
+    const saved = window.sessionStorage.getItem('ks_ui_lang');
+    return saved === 'mr' || saved === 'hi' || saved === 'en' ? saved : 'en';
+  });
+
+  const setLanguage = (lang: SupportedLanguage) => {
+    window.sessionStorage.setItem('ks_ui_lang', lang);
+    setLanguageState(lang);
+  };
   const [notifications, setNotifications] = useState<any[]>([]);
   const [liveMessages, setLiveMessages] = useState<any[]>([]);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -98,9 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .get('/auth/me')
       .then(({ data }) => {
         setUser(data.user);
-        if (data.user?.preferredLanguage) {
-          setLanguage(data.user.preferredLanguage);
-        }
       })
       .catch(() => {
         window.sessionStorage.removeItem('ks_auth_token');
@@ -162,7 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await api.post('/auth/login', { email, password });
     window.sessionStorage.setItem('ks_auth_token', data.token);
     setUser(data.user);
-    if (data.user.preferredLanguage) setLanguage(data.user.preferredLanguage);
     notify(`Welcome back, ${data.user.name}`, 'success');
     return data.user;
   };
@@ -231,3 +235,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
   return ctx;
 }
+

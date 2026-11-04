@@ -139,31 +139,112 @@ function matchesFilter(doc: BaseDoc, filter: Record<string, any>): boolean {
 
 export async function initDatabase(): Promise<{ mode: string }> {
   const configuredUri = (process.env.MONGODB_URI || '').trim();
-  const isCloudPreview = process.env.DISABLE_HMR === 'true';
-  // Default to local MongoDB Community Server (127.0.0.1:27017) on laptops even if .env is missing or empty
-  const rawUri = configuredUri || (!isCloudPreview ? 'mongodb://127.0.0.1:27017' : '');
+  const isCloudOrProd = process.env.DISABLE_HMR === 'true' || process.env.NODE_ENV === 'production';
+  // Default to local MongoDB Community Server (127.0.0.1:27017) on laptops in dev even if .env is missing
+  const rawUri = configuredUri || (!isCloudOrProd ? 'mongodb://127.0.0.1:27017' : '');
   // Normalize localhost -> 127.0.0.1 to prevent Windows Node.js IPv6 (::1) ECONNREFUSED errors
   const uri = rawUri.replace(/^mongodb:\/\/localhost(?=[:/?]|$)/i, 'mongodb://127.0.0.1');
   const dbName = (process.env.MONGODB_DB_NAME || 'kaushalsetu').trim();
 
   if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
     try {
+      const timeoutMs = uri.startsWith('mongodb+srv://') ? 10000 : configuredUri ? 5000 : 2000;
       mongoClient = new MongoClient(uri, {
-        serverSelectionTimeoutMS: configuredUri ? 4000 : 2000,
+        serverSelectionTimeoutMS: timeoutMs,
       });
       await mongoClient.connect();
       await mongoClient.db('admin').command({ ping: 1 });
       nativeDb = mongoClient.db(dbName);
 
+      // Clean up any blank or legacy snake_case rows so all unique indexes build with zero E11000 warnings
       try {
-        await nativeDb.collection('users').createIndex({ email: 1 }, { unique: true });
-        await nativeDb.collection('worker_profiles').createIndex({ location: '2dsphere' });
-        await nativeDb.collection('jobs').createIndex({ location: '2dsphere' });
-        await nativeDb.collection('job_applications').createIndex({ jobId: 1, workerId: 1 }, { unique: true });
-        await nativeDb.collection('reviews').createIndex({ projectId: 1, reviewerId: 1 }, { unique: true });
-        await nativeDb.collection('skill_passports').createIndex({ passportCode: 1 }, { unique: true });
-      } catch (indexErr) {
-        console.warn('[MongoDB] Non-fatal index warning:', indexErr);
+        await nativeDb.collection('users').deleteMany({
+          $and: [
+            { $or: [{ email: { $exists: false } }, { email: null }, { email: '' }] },
+            { $or: [{ name: { $exists: false } }, { name: null }, { name: '' }] },
+          ],
+        } as any);
+
+        const blankEmailUsers = await nativeDb
+          .collection('users')
+          .find({ $or: [{ email: { $exists: false } }, { email: null }, { email: '' }] } as any)
+          .toArray();
+        for (const doc of blankEmailUsers) {
+          await nativeDb
+            .collection('users')
+            .updateOne({ _id: doc._id }, { $set: { email: `legacy-${String(doc._id)}@local.kaushalsetu.in` } });
+        }
+
+        const nullReviews = await nativeDb
+          .collection('reviews')
+          .find({
+            $or: [
+              { projectId: { $exists: false } },
+              { projectId: null },
+              { reviewerId: { $exists: false } },
+              { reviewerId: null },
+            ],
+          } as any)
+          .toArray();
+        for (const doc of nullReviews) {
+          await nativeDb.collection('reviews').updateOne(
+            { _id: doc._id },
+            {
+              $set: {
+                projectId: String(doc.projectId || doc.project_id || `legacy-proj-${String(doc._id)}`),
+                reviewerId: String(doc.reviewerId || doc.employer_id || `legacy-rev-${String(doc._id)}`),
+                workerId: String(doc.workerId || doc.worker_id || ''),
+              },
+            }
+          );
+        }
+
+        const nullApps = await nativeDb
+          .collection('job_applications')
+          .find({
+            $or: [{ jobId: { $exists: false } }, { jobId: null }, { workerId: { $exists: false } }, { workerId: null }],
+          } as any)
+          .toArray();
+        for (const doc of nullApps) {
+          await nativeDb.collection('job_applications').updateOne(
+            { _id: doc._id },
+            {
+              $set: {
+                jobId: String(doc.jobId || doc.job_id || `legacy-job-${String(doc._id)}`),
+                workerId: String(doc.workerId || doc.worker_id || `legacy-wrk-${String(doc._id)}`),
+              },
+            }
+          );
+        }
+
+        const nullPassports = await nativeDb
+          .collection('skill_passports')
+          .find({ $or: [{ passportCode: { $exists: false } }, { passportCode: null }, { passportCode: '' }] } as any)
+          .toArray();
+        for (const doc of nullPassports) {
+          await nativeDb.collection('skill_passports').updateOne(
+            { _id: doc._id },
+            { $set: { passportCode: String(doc.passport_code || `KS-LEGACY-${String(doc._id)}`) } }
+          );
+        }
+      } catch {
+        // ignore pre-index cleanup issues
+      }
+
+      const indexSpecs: Array<{ col: CollectionName; spec: Record<string, any>; opts?: Record<string, any> }> = [
+        { col: 'users', spec: { email: 1 }, opts: { unique: true } },
+        { col: 'worker_profiles', spec: { location: '2dsphere' } },
+        { col: 'jobs', spec: { location: '2dsphere' } },
+        { col: 'job_applications', spec: { jobId: 1, workerId: 1 }, opts: { unique: true } },
+        { col: 'reviews', spec: { projectId: 1, reviewerId: 1 }, opts: { unique: true } },
+        { col: 'skill_passports', spec: { passportCode: 1 }, opts: { unique: true } },
+      ];
+      for (const idx of indexSpecs) {
+        try {
+          await nativeDb.collection(idx.col).createIndex(idx.spec as any, idx.opts);
+        } catch (indexErr) {
+          console.warn(`[MongoDB] Non-fatal index warning on ${idx.col}:`, indexErr);
+        }
       }
 
       activeBackendMode = 'mongodb_native';

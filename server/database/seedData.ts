@@ -55,8 +55,9 @@ async function repairAnyLegacyMongoUsers(defaultDemoHash: string): Promise<void>
       } else if (u.role === 'admin') {
         nextHash = await bcrypt.hash('Admin@123', 10);
       }
+      const cleanEmail = String(u.email || '').trim().toLowerCase() || `legacy-${String(u._id)}@local.kaushalsetu.in`;
       await db.updateOne('users', { _id: u._id }, {
-        email: String(u.email || '').trim().toLowerCase(),
+        email: cleanEmail,
         passwordHash: nextHash,
         status: u.status || 'active',
       });
